@@ -33,7 +33,7 @@ def add_routes(app):
     app.route("/check_username/<username>/")(check_username)
     app.route('/login/', methods=["GET", "POST"])(login)
     app.route('/logout/')(logout)
-    app.route('/api/check_pwd/', methods=["POST"])(check_password)
+    app.route('/api/check_pwd', methods=["POST"])(check_password)
     app.route('/manage/password/', methods=["GET", "POST"])(change_password)
     app.route('/<logged_in_user>/manage/withdraw/')(withdraw_manager)
     app.route('/api/user/delete/', methods=["POST"])(delete_user)
@@ -134,8 +134,9 @@ def register():
 def check_username(username, is_internal=False):
     """/check_username/<username> 유저가 존재하는지 확인합니다."""
     found = User.query.filter(
-            User.username == username,
+        User.username == username,
     ).first()
+
     if not is_internal:
         if found:
             return "Existing Username", 400
@@ -202,16 +203,16 @@ def get_logged_in_username():
 
 def check_password():
     username = get_logged_in_username()
-    password = request.form['val']
+    password = request.get_json()['val']
     found = check_username(username, is_internal=True)
 
     if not bcrypt.check_password_hash(
-                found.password_hash,
-                password
+            found.password_hash,
+            password
     ):
         return "oops", 400
-    else:
-        return "yeah"
+
+    return "yeah"
 
 
 def change_password():

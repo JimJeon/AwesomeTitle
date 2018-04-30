@@ -1,47 +1,25 @@
 {% extends "_extends/_index.html" %}
 {% block _index__container %}
+  <div id='change-password'>
     <fieldset class="form-group">
         <label>기존 비밀번호 입력 후 [ENTER]</label>
-        <input type="password" class="form-control pwd" placeholder="기존 비밀번호를 입력해주세요" data-trigger="manual">
+        <input type="password" class="form-control pwd" placeholder="기존 비밀번호를 입력해주세요" data-trigger="manual"i v-model="current_password" v-tooltip="current_password_tooltip" @change="checkPassword">
     </fieldset>
-    <form class="pwd_form" method="POST" action="/manage/password/" style="display: none;">
+    <form class="pwd_form" method="POST" action="/manage/password/" style="display: none;" v-if="checkPassword===true">
         <fieldset class="form-group">
             <label>새로운 비밀번호</label>
             <input type="password" class="form-control npwd" name="new_pwd" placeholder="새로운 비밀번호를 입력해주세요">
         </fieldset>
         <fieldset class="pwd_form">
             <label>새로운 비밀번호 재입력</label>
-            <input type="password" class="form-control npwda" name="new_pwda" placeholder="새로운 비밀번호를 다시 입력해주세요." data-trigger="manual">
+            <input type="password" class="form-control npwda" name="new_pwda" placeholder="새로운 비밀번호를 다시 입력해주세요." data-trigger="manual" v-tooltip="new_password_tooltip">
         </fieldset>
         <button type="submit" class="btn btn-primary">제출</button>
     </form>
+  </div>
 {% endblock %}
 {% block _index__script %}
     <script>
-        $('.pwd').change(
-                function(){
-                    var val = $('.pwd').val();
-                    // 맞았는지 틀렸는지 물어봄.
-                    $.post(
-                        "/api/check_pwd/",
-                        {
-                            'val': val
-                        },
-                        function (){
-                    // 맞으면 추가 + 메세지 숨기기.
-                            $('.pwd').tooltip('hide');
-                            $('.pwd_form').show();
-                        }
-                    ).fail(
-                        function (){
-                    // 틀리면 삭제 + 메세지를 아래처럼 보여줍시다.
-                            $('.pwd').attr('title', "패스워드 불일치");
-                            $('.pwd').tooltip('show');
-                            $('.that_form').hide();
-                        }
-                    );
-                }
-        );
 
         var changed_npwda = false;
         $('.npwd').change(
@@ -68,5 +46,40 @@
                 }
             }
         );
+
+      Vue.use(VTooltip)
+
+      var app = new Vue({
+        el: '#change-password',
+        delimiters: ['[[',']]'],
+
+        data: {
+          current_password: '',
+          new_password: '',
+          new_password_repeat: '',
+          current_password_tooltip: '',
+          new_password_tooltip: ''
+        },
+
+        methods: {
+          checkPassword: function() {
+            return this.postData('/api/check_pwd', {'val': this.current_password})
+              .then(response => (response.ok) ? true : function() {
+                current_password_tooltip = 'no correct password'
+                return false
+              })
+          },
+          postData(url, data) {
+            return fetch(url, {
+              body: JSON.stringify(data),
+              cache: 'no-cache',
+              headers: {
+                'content-type': 'application/json'
+              },
+              method: 'POST',
+            })
+          }
+        }
+      })
     </script>
 {% endblock %}
